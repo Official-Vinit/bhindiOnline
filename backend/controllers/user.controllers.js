@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import uploadOnCloudinary from "../config/cloudinary.js";
 
 export const getCurrentUser = async(req,res)=>{
     try{
@@ -17,7 +18,7 @@ export const getCurrentUser = async(req,res)=>{
 export const updateProfile = async (req, res) => {
     try {
         const userId = req.userId;
-        const { name, image } = req.body;
+        const { name } = req.body;
         const updates = {};
 
         if (name !== undefined) {
@@ -33,21 +34,26 @@ export const updateProfile = async (req, res) => {
             updates.name = trimmedName;
         }
 
-        if (image !== undefined) {
-            if (typeof image !== "string") {
-                return res.status(400).json({ message: "Image must be a string" });
+        if (req.file) {
+            const imageUrl = await uploadOnCloudinary(req.file.path);
+            if (!imageUrl) {
+                return res.status(500).json({ message: "Failed to upload image" });
             }
-            updates.image = image.trim();
+            updates.image = imageUrl;
         }
 
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({ message: "No profile fields provided" });
         }
 
-        const user = await User.findByIdAndUpdate(userId, updates, {
-            new: true,
-            runValidators: true,
-        }).select("-password");
+        const user = await User.findByIdAndUpdate(
+            userId,
+            updates,
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).select("-password");
 
         if (!user) {
             return res.status(400).json({ message: "user not found" });
