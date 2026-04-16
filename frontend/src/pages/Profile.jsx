@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
-import { serverurl } from '../main'
+import { serverurl } from '../config/api'
 import { setUserData } from '../../redux/userSlice'
 
 export default function Profile() {

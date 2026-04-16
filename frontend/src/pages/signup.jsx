@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
-import { serverurl } from '../main'
+import { serverurl } from '../config/api'
 import { useDispatch, useSelector } from 'react-redux'
 import { setUserData } from '../../redux/userSlice.js'
 
