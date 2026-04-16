@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { serverurl } from '../main'
 import { setUserData } from '../../redux/userSlice'
 
 export default function Profile() {
   const { userData } = useSelector(state => state.user)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   const [form, setForm] = useState({ name: '', image: '' })
   const [loading, setLoading] = useState(false)
@@ -76,6 +77,7 @@ export default function Profile() {
 
       dispatch(setUserData(result.data))
       setSuccess('Profile updated successfully.')
+      navigate('/')
     } catch (err) {
       const message = err?.response?.data?.message || err.message || 'Failed to update profile'
       setError(message)
@@ -178,7 +180,6 @@ export default function Profile() {
               </button>
             </div>
           </form>
-
           <div className="mt-6 text-sm text-slate-500">
             Back to chat: <Link to="/" className="text-green-600 font-semibold">Home</Link>
           </div>
