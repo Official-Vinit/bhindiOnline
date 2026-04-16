@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
@@ -10,51 +10,65 @@ export default function Profile() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({ name: '', image: '' })
+  const imageInputRef = useRef(null)
+  const previewUrlRef = useRef(null)
+
+  const [name, setName] = useState('')
+  const [frontendImage, setFrontendImage] = useState('/logo.png')
+  const [backendImage, setBackendImage] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [imageLoadError, setImageLoadError] = useState(false)
 
   useEffect(() => {
-    setForm({
-      name: userData?.name || '',
-      image: userData?.image || ''
-    })
+    setName(userData?.name || '')
+    setFrontendImage(userData?.image || '/logo.png')
+    setBackendImage(null)
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
+    }
   }, [userData?.name, userData?.image])
 
   useEffect(() => {
-    setImageLoadError(false)
-  }, [form.image, userData?.image])
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+      }
+    }
+  }, [])
 
-  function handleChange(e) {
-    const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
+  const normalizedCurrentName = (userData?.name || '').trim()
+  const normalizedName = name.trim()
+  const hasNameChange = normalizedName !== normalizedCurrentName
+  const hasImageChange = Boolean(backendImage)
+  const canSubmit = normalizedName.length > 0 && (hasNameChange || hasImageChange)
+
+  function handleImageChange(e) {
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+    }
+
+    const previewUrl = URL.createObjectURL(selectedFile)
+    previewUrlRef.current = previewUrl
+
+    setFrontendImage(previewUrl)
+    setBackendImage(selectedFile)
     if (error) setError('')
     if (success) setSuccess('')
   }
 
-  const normalizedCurrentName = (userData?.name || '').trim()
-  const normalizedCurrentImage = (userData?.image || '').trim()
-  const normalizedFormName = form.name.trim()
-  const normalizedFormImage = form.image.trim()
-  const hasChanges = normalizedFormName !== normalizedCurrentName || normalizedFormImage !== normalizedCurrentImage
-  const canSubmit = normalizedFormName.length > 0 && hasChanges
-
-  const profileImage = useMemo(() => {
-    if (imageLoadError) return '/logo.png'
-    return normalizedFormImage || normalizedCurrentImage || '/logo.png'
-  }, [imageLoadError, normalizedFormImage, normalizedCurrentImage])
-
   async function handleSubmit(e) {
     e.preventDefault()
 
-    if (!normalizedFormName) {
+    if (!normalizedName) {
       setError('Name is required')
       return
     }
 
-    if (!hasChanges) {
+    if (!hasNameChange && !hasImageChange) {
       setError('No changes to update')
       return
     }
@@ -64,20 +78,28 @@ export default function Profile() {
     setSuccess('')
 
     try {
+      const formData = new FormData()
+      formData.append('name', normalizedName)
+      if (backendImage) {
+        formData.append('image', backendImage)
+      }
+
       const result = await axios.put(
         `${serverurl}/api/user/profile`,
+        formData,
         {
-          name: normalizedFormName,
-          image: normalizedFormImage
-        },
-        {
-          withCredentials: true
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
       )
 
       dispatch(setUserData(result.data))
       setSuccess('Profile updated successfully.')
-      navigate('/')
+      setTimeout(() => {
+        navigate('/')
+      }, 1000)
     } catch (err) {
       const message = err?.response?.data?.message || err.message || 'Failed to update profile'
       setError(message)
@@ -97,9 +119,11 @@ export default function Profile() {
           </div>
 
           <img
-            src={profileImage}
+            src={frontendImage || '/logo.png'}
             alt="Profile"
-            onError={() => setImageLoadError(true)}
+            onError={(e) => {
+              e.currentTarget.src = '/logo.png'
+            }}
             className="w-32 h-32 rounded-full object-cover bg-white/20 p-1 shadow-md border-4 border-white/40"
           />
 
@@ -133,7 +157,7 @@ export default function Profile() {
             <img src="/logo.png" alt="Bhindi logo" className="w-12 h-12" />
             <div>
               <h2 className="text-2xl font-bold text-slate-800">Update Profile</h2>
-              <p className="text-sm text-slate-500">You can update your name and profile image URL.</p>
+              <p className="text-sm text-slate-500">Update your name and choose a new profile image.</p>
             </div>
           </div>
 
@@ -142,22 +166,36 @@ export default function Profile() {
               <label className="text-xs font-medium text-slate-600">Name</label>
               <input
                 name="name"
-                value={form.name}
-                onChange={handleChange}
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  if (error) setError('')
+                  if (success) setSuccess('')
+                }}
                 placeholder="Your full name"
                 className="w-full mt-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-green-300"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600">Profile Image URL</label>
+              <label className="text-xs font-medium text-slate-600">Profile Image</label>
               <input
-                name="image"
-                value={form.image}
-                onChange={handleChange}
-                placeholder="https://example.com/avatar.png"
-                className="w-full mt-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-green-300"
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
               />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="w-full mt-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+              >
+                Choose image
+              </button>
+              <p className="mt-2 text-xs text-slate-500 truncate">
+                {backendImage ? backendImage.name : 'No new file selected'}
+              </p>
             </div>
 
             {error && (
@@ -180,6 +218,7 @@ export default function Profile() {
               </button>
             </div>
           </form>
+
           <div className="mt-6 text-sm text-slate-500">
             Back to chat: <Link to="/" className="text-green-600 font-semibold">Home</Link>
           </div>
