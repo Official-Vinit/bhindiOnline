@@ -1,15 +1,19 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Login from './pages/login'
 import Signup from './pages/signup'
 import getCurrentUser from './customHooks/getCurrentUser'
 import Home from './pages/Home'
 import Profile from './pages/Profile'
 import { useSelector } from 'react-redux'
-import { Navigate } from 'react-router-dom'
+import getOtherUsers from './customHooks/getOtherUsers'
 
 function App() {
-  getCurrentUser()
+  const location = useLocation()
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup'
+
+  getCurrentUser(isAuthPage)
+  getOtherUsers(isAuthPage)
   let {userData} = useSelector(state=>state.user)
   return (
     <Routes>

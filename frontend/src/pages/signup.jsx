@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import axios from 'axios'
 import { serverurl } from '../config/api'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { setUserData } from '../../redux/userSlice.js'
+import { useNavigate } from 'react-router-dom'
 
 export default function Signup() {
   const [form, setForm] = useState({ username: '', email: '', password: '' })
@@ -11,7 +12,7 @@ export default function Signup() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   let dispatch = useDispatch()
-   console.log(userData)
+  const navigate = useNavigate()
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -39,6 +40,7 @@ export default function Signup() {
       dispatch(setUserData(result.data))
       console.log(result)
       setForm({ username: '', email: '', password: '' })
+      navigate('/profile')
       setSubmitted(true)
     } catch (err) {
       console.error(err)

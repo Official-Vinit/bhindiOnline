@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import axios from 'axios'
 import { serverurl } from '../config/api'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { setUserData } from '../../redux/userSlice.js'
+import { useNavigate } from 'react-router-dom'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
@@ -11,6 +12,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   let dispatch = useDispatch()
+  const navigate = useNavigate()
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -37,6 +39,7 @@ export default function Login() {
       dispatch(setUserData(result.data))
       setForm({ email: '', password: '' })
       setSubmitted(true)
+      navigate('/')
     } catch (err) {
       console.error(err)
       const message = err?.response?.data?.message || err.message || 'An unexpected error occurred'

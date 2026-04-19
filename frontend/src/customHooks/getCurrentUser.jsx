@@ -4,10 +4,11 @@ import { serverurl } from "../config/api"
 import axios from 'axios'
 import { setUserData } from "../../redux/userSlice"
 
-
-const getCurrentUser = ()=>{
+const getCurrentUser = (skip = false) => {
     let dispatch = useDispatch()
     useEffect(()=>{
+        if (skip) return
+
         const fetchUser = async()=>{
             try{
                 let result = await axios.get(`${serverurl}/api/user/current`,{withCredentials:true})
@@ -17,7 +18,7 @@ const getCurrentUser = ()=>{
             }
         }
         fetchUser()
-    },[dispatch])
+    },[dispatch, skip])
 }
 
 export default getCurrentUser;
