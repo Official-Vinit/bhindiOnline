@@ -64,3 +64,20 @@ export const updateProfile = async (req, res) => {
         return res.status(500).json({ message: `profile update error ${error}` });
     }
 };
+
+export const getOtherUsers = async (req,res)=>{
+    try{
+        const currentUserId = req.userId
+        const currentUser = await User.findById(currentUserId).select("email userName")
+
+        const users = await User.find({
+            _id: { $ne: currentUserId },
+            ...(currentUser?.email ? { email: { $ne: currentUser.email } } : {}),
+            ...(currentUser?.userName ? { userName: { $ne: currentUser.userName } } : {})
+        }).select("-password")
+
+        return res.status(200).json(users)
+    }catch(error){
+        return res.status(500).json({ message: `getting users error: ${error}` });
+    }
+}
