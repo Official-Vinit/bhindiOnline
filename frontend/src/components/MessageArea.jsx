@@ -3,6 +3,8 @@ import axios from 'axios'
 import { HiChevronLeft, HiOutlineFaceSmile, HiOutlinePhoto, HiXMark } from 'react-icons/hi2'
 import { useSelector } from 'react-redux'
 import { serverurl } from '../config/api'
+import { getSocket } from '../config/socket'
+
 
 const QUICK_EMOJIS = ['😀', '😂', '😍', '😎', '🔥', '👏', '😭', '👍', '🙏', '🎉', '✨', '❤️']
 
@@ -17,7 +19,7 @@ export default function MessageArea({
 	showBackButton = false,
 	onBack = () => {}
 }) {
-	const { selectedUser, userData } = useSelector((state) => state.user)
+	const { selectedUser, userData, onlineUsers } = useSelector((state) => state.user)
 	const [messages, setMessages] = useState([])
 	const [messageInput, setMessageInput] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
@@ -116,6 +118,37 @@ export default function MessageArea({
 		if (!messageEndRef.current) return
 		messageEndRef.current.scrollIntoView({ behavior: 'smooth' })
 	}, [messages, isLoading])
+
+	useEffect(() => {
+		const socket = getSocket()
+		if (!socket || !selectedUserId || !currentUserId) return
+
+		const handleNewMessage = (newMessage) => {
+			if (!newMessage) return
+
+			const isFromSelectedToCurrent =
+				String(newMessage.sender) === String(selectedUserId) &&
+				String(newMessage.receiver) === String(currentUserId)
+
+			const isFromCurrentToSelected =
+				String(newMessage.sender) === String(currentUserId) &&
+				String(newMessage.receiver) === String(selectedUserId)
+
+			if (!isFromSelectedToCurrent && !isFromCurrentToSelected) return
+
+			setMessages((prev) => {
+				const alreadyExists = prev.some((message) => message?._id && message._id === newMessage._id)
+				if (alreadyExists) return prev
+				return [...prev, newMessage]
+			})
+		}
+
+		socket.on('new message', handleNewMessage)
+
+		return () => {
+			socket.off('new message', handleNewMessage)
+		}
+	}, [selectedUserId, currentUserId, onlineUsers])
 
 	useEffect(() => {
 		if (!viewerImage) return
