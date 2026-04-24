@@ -1,1 +1,1 @@
-export const serverurl = "http://localhost:8000"
+export const serverurl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"
