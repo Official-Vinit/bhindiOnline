@@ -12,13 +12,17 @@ import { app, server } from "./socket/socket.js";
 dotenv.config()
 
 const port = process.env.PORT||8000;
-
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173"
+const corsOptions = {
+    origin: FRONTEND_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+}
 
 app.use(express.json());
-app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials:true
-}));
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(cookieParser());
 
 app.get('/',(req,res)=>{
