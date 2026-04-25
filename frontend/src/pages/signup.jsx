@@ -6,7 +6,7 @@ import { setUserData } from '../../redux/userSlice.js'
 import { useNavigate } from 'react-router-dom'
 
 export default function Signup() {
-  const [form, setForm] = useState({ username: '', email: '', password: '' })
+  const [form, setForm] = useState({ username: '', email: '', password: '', confirmPassword: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState("")
@@ -26,6 +26,10 @@ export default function Signup() {
       setError('Please fill all fields')
       return
     }
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
     setLoading(true)
     setSubmitted(false)
     setError("")
@@ -39,7 +43,7 @@ export default function Signup() {
       })
       dispatch(setUserData(result.data))
       console.log(result)
-      setForm({ username: '', email: '', password: '' })
+      setForm({ username: '', email: '', password: '', confirmPassword: '' })
       navigate('/profile')
       setSubmitted(true)
     } catch (err) {
@@ -51,7 +55,8 @@ export default function Signup() {
     }
   }
 
-  const canSubmit = form.username && form.email && form.password
+  const passwordsMatch = form.password === form.confirmPassword
+  const canSubmit = form.username && form.email && form.password && form.confirmPassword
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6">
@@ -133,6 +138,30 @@ export default function Signup() {
               </div>
             </div>
 
+            <div>
+              <label className="text-xs font-medium text-slate-600">Confirm Password</label>
+              <div className="relative">
+                <input
+                  name="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Repeat your password"
+                  className="w-full mt-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-green-300 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(s => !s)}
+                  className="absolute right-2 top-2 text-slate-500 px-3 py-1 rounded-md"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {form.confirmPassword && form.password !== form.confirmPassword && (
+                <p className="text-red-600 text-sm mt-1">Passwords do not match</p>
+              )}
+            </div>
+
             {error && (
             <div className="mt-4 rounded-md bg-red-50 border border-red-100 p-3 text-sm text-red-800">{error}</div>
           )}
@@ -140,9 +169,9 @@ export default function Signup() {
             <div>
               <button
                 type="submit"
-                disabled={!canSubmit || loading}
+                disabled={!canSubmit || loading || !passwordsMatch}
                 className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold shadow-sm transition ${
-                  canSubmit && !loading ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-300 cursor-not-allowed'
+                  canSubmit && !loading && passwordsMatch ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-300 cursor-not-allowed'
                 }`}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
